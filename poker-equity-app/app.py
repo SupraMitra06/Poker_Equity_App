@@ -9,17 +9,14 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Deep Luxury / Modern Dark Poker Styling
+# Custom Poker Cockpit Styling
 st.markdown("""
 <style>
-    /* Main Theme Overrides */
     .stApp {
         background-color: #0b1311;
         color: #e2e8f0;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
-    
-    /* Header Styling */
     .main-header {
         font-size: 2rem;
         font-weight: 700;
@@ -32,19 +29,17 @@ st.markdown("""
         color: #94a3b8;
         margin-bottom: 1.5rem;
     }
-    
-    /* Poker Card UI Component */
     .poker-card {
         background: #ffffff;
         border-radius: 8px;
-        width: 64px;
-        height: 88px;
+        width: 60px;
+        height: 84px;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
         padding: 6px 8px;
         font-weight: 800;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+        box-shadow: 0 8px 12px -2px rgba(0, 0, 0, 0.5);
         border: 1px solid #e2e8f0;
         user-select: none;
         margin-top: 6px;
@@ -53,8 +48,8 @@ st.markdown("""
         background: #14231e;
         border: 2px dashed #2d4f43;
         border-radius: 8px;
-        width: 64px;
-        height: 88px;
+        width: 60px;
+        height: 84px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -64,11 +59,8 @@ st.markdown("""
     }
     .card-red { color: #dc2626; }
     .card-black { color: #0f172a; }
-    
     .card-rank { font-size: 1.25rem; line-height: 1; }
     .card-suit { font-size: 1.2rem; align-self: flex-end; line-height: 1; }
-    
-    /* Section Headers */
     .section-title {
         font-size: 1.1rem;
         font-weight: 600;
@@ -80,8 +72,6 @@ st.markdown("""
         border-bottom: 1px solid #1e293b;
         padding-bottom: 0.5rem;
     }
-
-    /* Streamlit Button Tweaks */
     div.stButton > button {
         border-radius: 6px;
         font-weight: 600;
@@ -90,12 +80,11 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.markdown('<div class="main-header">TEXAS HOLD\'EM EQUITY CALCULATOR</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-header">Monte Carlo simulation engine built with eval7</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-header">Monte Carlo simulation engine with detailed hand breakdown</div>', unsafe_allow_html=True)
 
 RANKS = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2']
 SUITS = ['s', 'h', 'd', 'c']
 SUIT_SYMBOLS = {'s': '♠', 'h': '♥', 'd': '♦', 'c': '♣'}
-
 ALL_CARDS = [f"{r}{s}" for r in RANKS for s in SUITS]
 
 def render_card_html(card_str):
@@ -117,13 +106,23 @@ with st.sidebar:
     num_players = st.slider("Number of Players", min_value=2, max_value=6, value=2)
     iterations = st.select_slider(
         "Monte Carlo Iterations", 
-        options=[1000, 5000, 10000, 25000, 50000], 
-        value=10000
+        options=[1000, 5000, 10000, 25000], 
+        value=5000
     )
     st.divider()
-    st.caption("Lower iterations run faster. Higher iterations yield higher statistical accuracy.")
+    
+    st.markdown("### Quick Actions")
+    if st.button("Reset Board Cards", use_container_width=True):
+        for b in range(5):
+            st.session_state[f"b_{b}"] = None
+            st.session_state[f"use_b_{b}"] = False
+        st.rerun()
+        
+    if st.button("Reset Everything", type="secondary", use_container_width=True):
+        st.session_state.clear()
+        st.rerun()
 
-# Initialize default cards in Session State if missing
+# Initialize Session State
 card_idx = 0
 for p in range(6):
     for c in [1, 2]:
@@ -140,7 +139,6 @@ for b in range(5):
     if chk_key not in st.session_state:
         st.session_state[chk_key] = False
 
-# Gather active cards in play
 def get_used_cards():
     used = set()
     for p in range(num_players):
@@ -160,7 +158,6 @@ def get_used_cards():
 def open_card_picker(target_slot_key):
     used_cards = get_used_cards()
     current_val = st.session_state.get(target_slot_key)
-    
     suit_names = {'s': 'Spades (♠)', 'h': 'Hearts (♥)', 'd': 'Diamonds (♦)', 'c': 'Clubs (♣)'}
     
     for suit in SUITS:
@@ -232,7 +229,7 @@ for idx in range(5):
 st.write("")
 st.divider()
 
-# 3. CALCULATOR ENGINE & RESULTS
+# 3. CALCULATOR ENGINE & HAND TYPE ANALYSIS
 all_selected_cards = [c for hand in player_hands for c in hand if c] + board_cards
 missing_player_cards = any(c is None for hand in player_hands for c in hand)
 
@@ -246,7 +243,6 @@ else:
             full_deck = list(eval7.Deck())
             known_cards = [eval7.Card(c) for c in all_selected_cards]
             
-            # Remove all dead cards from the deck
             deck = [c for c in full_deck if c not in known_cards]
             
             eval7_hands = [[eval7.Card(c) for c in hand] for hand in player_hands]
@@ -254,8 +250,9 @@ else:
             cards_needed = 5 - len(eval7_board)
             
             wins = [0.0] * num_players
+            # Track hand composition occurrences per player
+            hand_types_counts = [{ht: 0 for ht in range(10)} for _ in range(num_players)]
             
-            # Run Monte Carlo loop
             for _ in range(iterations):
                 random.shuffle(deck)
                 simulated_board = eval7_board + deck[:cards_needed]
@@ -266,12 +263,19 @@ else:
                 winners = [i for i, score in enumerate(scores) if score == max_score]
                 split_share = 1.0 / len(winners)
                 
+                for i, score in enumerate(scores):
+                    # Extract 4-bit hand rank index from eval7 score
+                    htype = eval7.handtype(score)
+                    
                 for w in winners:
                     wins[w] += split_share
+                    w_score = scores[w]
+                    # Map winner's hand score string to category index
+                    ht_name = eval7.handtype(w_score)
+                    hand_types_counts[w][ht_name] += 1
             
             equities = [(w / iterations) * 100 for w in wins]
             
-            # Display Results
             st.markdown('<div class="section-title">Equity Breakdown</div>', unsafe_allow_html=True)
             res_cols = st.columns(num_players)
             
@@ -279,3 +283,10 @@ else:
                 with res_cols[i]:
                     st.metric(label=f"Player {i+1}", value=f"{equities[i]:.2f}%")
                     st.progress(min(1.0, equities[i] / 100.0))
+                    
+                    st.caption("Winning Hand Types:")
+                    # Display top winning hand compositions
+                    top_hands = {k: v for k, v in hand_types_counts[i].items() if v > 0}
+                    for ht_name, count in sorted(top_hands.items(), key=lambda x: x[1], reverse=True)[:4]:
+                        pct = (count / iterations) * 100
+                        st.text(f"{ht_name}: {pct:.1f}%")
