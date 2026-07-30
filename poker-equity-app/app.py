@@ -10,78 +10,143 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom Poker Cockpit Styling
+# --- ANTI-GRAVITY UI/UX STYLING ---
 st.markdown("""
 <style>
+    /* Dark Atmospheric Background with Radial Gradient Depth */
     .stApp {
-        background-color: #0b1311;
-        color: #e2e8f0;
+        background: radial-gradient(circle at 50% 20%, #13241e 0%, #080d0b 80%);
+        color: #f1f5f9;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
-    .main-header {
-        font-size: 2rem;
-        font-weight: 700;
-        letter-spacing: -0.02em;
-        color: #ffffff;
-        margin-bottom: 0.2rem;
+    
+    /* Header Styling */
+    .main-title {
+        font-size: 2.2rem;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 0.1rem;
     }
-    .sub-header {
+    .sub-title {
         font-size: 0.95rem;
         color: #94a3b8;
         margin-bottom: 1.5rem;
     }
+    
+    /* Anti-Gravity Floating Poker Cards */
+    .card-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        perspective: 1000px;
+    }
+    
     .poker-card {
-        background: #ffffff;
-        border-radius: 8px;
-        width: 60px;
-        height: 84px;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(12px);
+        border-radius: 12px;
+        width: 68px;
+        height: 96px;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
-        padding: 6px 8px;
+        padding: 8px 10px;
         font-weight: 800;
-        box-shadow: 0 8px 12px -2px rgba(0, 0, 0, 0.5);
-        border: 1px solid #e2e8f0;
+        box-shadow: 
+            0 10px 25px -5px rgba(0, 0, 0, 0.6),
+            0 8px 10px -6px rgba(0, 0, 0, 0.5),
+            inset 0 1px 1px rgba(255, 255, 255, 0.8);
+        border: 1px solid rgba(255, 255, 255, 0.4);
         user-select: none;
         margin-top: 6px;
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        cursor: pointer;
     }
+    
+    .poker-card:hover {
+        transform: translateY(-8px) scale(1.05) rotateX(4deg);
+        box-shadow: 
+            0 20px 35px -10px rgba(56, 189, 248, 0.3),
+            0 12px 15px -8px rgba(0, 0, 0, 0.7);
+        border-color: #38bdf8;
+    }
+
     .poker-card-empty {
-        background: #14231e;
-        border: 2px dashed #2d4f43;
-        border-radius: 8px;
-        width: 60px;
-        height: 84px;
+        background: rgba(20, 35, 30, 0.4);
+        backdrop-filter: blur(8px);
+        border: 2px dashed rgba(56, 189, 248, 0.25);
+        border-radius: 12px;
+        width: 68px;
+        height: 96px;
         display: flex;
         align-items: center;
         justify-content: center;
         color: #475569;
-        font-size: 1.2rem;
+        font-size: 1.4rem;
         margin-top: 6px;
+        transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    .card-red { color: #dc2626; }
+    
+    .poker-card-empty:hover {
+        border-color: rgba(56, 189, 248, 0.6);
+        background: rgba(20, 35, 30, 0.7);
+        transform: translateY(-4px);
+    }
+
+    .card-red { color: #e11d48; }
     .card-black { color: #0f172a; }
-    .card-rank { font-size: 1.25rem; line-height: 1; }
-    .card-suit { font-size: 1.2rem; align-self: flex-end; line-height: 1; }
+    .card-rank { font-size: 1.4rem; line-height: 1; }
+    .card-suit { font-size: 1.3rem; align-self: flex-end; line-height: 1; }
+    
+    /* Floating HUD Panels */
+    .hud-card {
+        background: rgba(15, 23, 42, 0.65);
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        padding: 16px;
+        box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.5);
+        margin-bottom: 12px;
+        transition: transform 0.3s ease;
+    }
+    
+    .hud-card:hover {
+        transform: translateY(-4px);
+        border-color: rgba(56, 189, 248, 0.3);
+    }
+
     .section-title {
-        font-size: 1.1rem;
-        font-weight: 600;
+        font-size: 1.05rem;
+        font-weight: 700;
         color: #38bdf8;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
-        margin-top: 1rem;
-        margin-bottom: 0.75rem;
-        border-bottom: 1px solid #1e293b;
-        padding-bottom: 0.5rem;
+        letter-spacing: 0.08em;
+        margin-top: 1.2rem;
+        margin-bottom: 0.8rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
-    div.stButton > button {
-        border-radius: 6px;
-        font-weight: 600;
+    
+    /* Primary CTA Button Overrides */
+    div.stButton > button[kind="primary"] {
+        background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%);
+        border: none;
+        box-shadow: 0 10px 20px -5px rgba(2, 132, 199, 0.5);
+        transition: all 0.25s ease;
+    }
+    div.stButton > button[kind="primary"]:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 15px 25px -5px rgba(2, 132, 199, 0.7);
     }
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="main-header">TEXAS HOLD\'EM EQUITY CALCULATOR</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-header">Monte Carlo simulation engine with detailed hand breakdown</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-title">TEXAS HOLD\'EM EQUITY ENGINE</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-title">Anti-gravity tactile equity & outcome probability engine</div>', unsafe_allow_html=True)
 
 RANKS = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2']
 SUITS = ['s', 'h', 'd', 'c']
@@ -90,14 +155,16 @@ ALL_CARDS = [f"{r}{s}" for r in RANKS for s in SUITS]
 
 def render_card_html(card_str):
     if not card_str or len(card_str) < 2:
-        return "<div class='poker-card-empty'>—</div>"
+        return "<div class='card-container'><div class='poker-card-empty'>+</div></div>"
     rank, suit = card_str[0], card_str[1]
     symbol = SUIT_SYMBOLS.get(suit, '')
     color_class = "card-red" if suit in ['h', 'd'] else "card-black"
     return f"""
-    <div class='poker-card {color_class}'>
-        <div class='card-rank'>{rank}</div>
-        <div class='card-suit'>{symbol}</div>
+    <div class='card-container'>
+        <div class='poker-card {color_class}'>
+            <div class='card-rank'>{rank}</div>
+            <div class='card-suit'>{symbol}</div>
+        </div>
     </div>
     """
 
@@ -178,7 +245,7 @@ def open_card_picker(target_slot_key):
                         st.rerun()
 
 # 1. PLAYER HANDS SECTION
-st.markdown('<div class="section-title">Player Hands</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-title">PLAYER HANDS</div>', unsafe_allow_html=True)
 p_cols = st.columns(num_players)
 player_hands = []
 
@@ -193,12 +260,12 @@ for i in range(num_players):
         
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("Card 1", key=f"btn_{c1_key}", use_container_width=True):
+            if st.button("Slot 1", key=f"btn_{c1_key}", use_container_width=True):
                 open_card_picker(c1_key)
             st.markdown(render_card_html(c1_val), unsafe_allow_html=True)
             
         with col2:
-            if st.button("Card 2", key=f"btn_{c2_key}", use_container_width=True):
+            if st.button("Slot 2", key=f"btn_{c2_key}", use_container_width=True):
                 open_card_picker(c2_key)
             st.markdown(render_card_html(c2_val), unsafe_allow_html=True)
             
@@ -207,7 +274,7 @@ for i in range(num_players):
 st.write("")
 
 # 2. COMMUNITY BOARD SECTION
-st.markdown('<div class="section-title">Community Board</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-title">COMMUNITY BOARD</div>', unsafe_allow_html=True)
 b_cols = st.columns(5)
 board_cards = []
 
@@ -218,7 +285,7 @@ for idx in range(5):
         
         b_key = f"b_{idx}"
         if chk:
-            if st.button("Pick", key=f"btn_{b_key}", use_container_width=True):
+            if st.button("Select", key=f"btn_{b_key}", use_container_width=True):
                 open_card_picker(b_key)
             card_val = st.session_state.get(b_key)
             if card_val:
@@ -251,7 +318,6 @@ else:
             cards_needed = 5 - len(eval7_board)
             
             wins = [0.0] * num_players
-            # Track winning hand type counts per player
             hand_types_counts = [defaultdict(int) for _ in range(num_players)]
             
             for _ in range(iterations):
@@ -272,12 +338,17 @@ else:
             
             equities = [(w / iterations) * 100 for w in wins]
             
-            st.markdown('<div class="section-title">Equity Breakdown</div>', unsafe_allow_html=True)
+            st.markdown('<div class="section-title">EQUITY BREAKDOWN</div>', unsafe_allow_html=True)
             res_cols = st.columns(num_players)
             
             for i in range(num_players):
                 with res_cols[i]:
-                    st.metric(label=f"Player {i+1}", value=f"{equities[i]:.2f}%")
+                    st.markdown(f"""
+                    <div class="hud-card">
+                        <h4 style="margin:0; color:#38bdf8;">Player {i+1}</h4>
+                        <h2 style="margin:4px 0 12px 0; font-size:2rem; font-weight:800;">{equities[i]:.2f}%</h2>
+                    </div>
+                    """, unsafe_allow_html=True)
                     st.progress(min(1.0, equities[i] / 100.0))
                     
                     st.caption("Winning Hand Types:")
