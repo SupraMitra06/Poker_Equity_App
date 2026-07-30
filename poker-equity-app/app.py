@@ -38,7 +38,7 @@ st.caption("Accurate Monte Carlo equity simulation with dynamic card filtering."
 
 RANKS = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A']
 SUITS = ['s', 'h', 'd', 'c']
-SUIT_SYMBOLS = {'s': '♠', 'h': '♥️', 'd': '♦️', 'c': '♣️'}
+SUIT_SYMBOLS = {'s': '♠️', 'h': '♥️', 'd': '♦️', 'c': '♣️'}
 
 # Generate full 52-card list formatted as strings (e.g., 'As', 'Kd', 'Tc')
 ALL_CARDS = [f"{r}{s}" for r in RANKS for s in SUITS]
