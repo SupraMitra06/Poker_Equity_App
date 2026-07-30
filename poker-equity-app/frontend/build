@@ -1,0 +1,9 @@
+import os
+import streamlit as st
+import streamlit.components.v1 as components
+
+# Point to the build directory
+BUILD_DIR = os.path.join(os.path.dirname(__file__), "frontend", "build")
+
+# Serve the custom component
+components.declare_component("poker_equity", path=BUILD_DIR)()
