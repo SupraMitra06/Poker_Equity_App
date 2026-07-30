@@ -1,6 +1,7 @@
 import streamlit as st
 import eval7
 import random
+from collections import defaultdict
 
 # Page Config
 st.set_page_config(
@@ -192,12 +193,12 @@ for i in range(num_players):
         
         col1, col2 = st.columns(2)
         with col1:
-            if st.button(f"Card 1", key=f"btn_{c1_key}", use_container_width=True):
+            if st.button("Card 1", key=f"btn_{c1_key}", use_container_width=True):
                 open_card_picker(c1_key)
             st.markdown(render_card_html(c1_val), unsafe_allow_html=True)
             
         with col2:
-            if st.button(f"Card 2", key=f"btn_{c2_key}", use_container_width=True):
+            if st.button("Card 2", key=f"btn_{c2_key}", use_container_width=True):
                 open_card_picker(c2_key)
             st.markdown(render_card_html(c2_val), unsafe_allow_html=True)
             
@@ -217,7 +218,7 @@ for idx in range(5):
         
         b_key = f"b_{idx}"
         if chk:
-            if st.button(f"Pick", key=f"btn_{b_key}", use_container_width=True):
+            if st.button("Pick", key=f"btn_{b_key}", use_container_width=True):
                 open_card_picker(b_key)
             card_val = st.session_state.get(b_key)
             if card_val:
@@ -250,8 +251,8 @@ else:
             cards_needed = 5 - len(eval7_board)
             
             wins = [0.0] * num_players
-            # Track hand composition occurrences per player
-            hand_types_counts = [{ht: 0 for ht in range(10)} for _ in range(num_players)]
+            # Track winning hand type counts per player
+            hand_types_counts = [defaultdict(int) for _ in range(num_players)]
             
             for _ in range(iterations):
                 random.shuffle(deck)
@@ -263,14 +264,9 @@ else:
                 winners = [i for i, score in enumerate(scores) if score == max_score]
                 split_share = 1.0 / len(winners)
                 
-                for i, score in enumerate(scores):
-                    # Extract 4-bit hand rank index from eval7 score
-                    htype = eval7.handtype(score)
-                    
                 for w in winners:
                     wins[w] += split_share
                     w_score = scores[w]
-                    # Map winner's hand score string to category index
                     ht_name = eval7.handtype(w_score)
                     hand_types_counts[w][ht_name] += 1
             
@@ -285,8 +281,10 @@ else:
                     st.progress(min(1.0, equities[i] / 100.0))
                     
                     st.caption("Winning Hand Types:")
-                    # Display top winning hand compositions
-                    top_hands = {k: v for k, v in hand_types_counts[i].items() if v > 0}
-                    for ht_name, count in sorted(top_hands.items(), key=lambda x: x[1], reverse=True)[:4]:
-                        pct = (count / iterations) * 100
-                        st.text(f"{ht_name}: {pct:.1f}%")
+                    top_hands = dict(hand_types_counts[i])
+                    if top_hands:
+                        for ht_name, count in sorted(top_hands.items(), key=lambda x: x[1], reverse=True)[:4]:
+                            pct = (count / iterations) * 100
+                            st.text(f"{ht_name}: {pct:.1f}%")
+                    else:
+                        st.text("No wins in simulation.")
