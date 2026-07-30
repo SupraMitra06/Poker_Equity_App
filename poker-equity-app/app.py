@@ -63,7 +63,6 @@ st.markdown("""
         user-select: none;
         margin-top: 6px;
         transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        cursor: pointer;
     }
     
     .poker-card:hover {
@@ -84,16 +83,11 @@ st.markdown("""
         display: flex;
         align-items: center;
         justify-content: center;
-        color: #475569;
-        font-size: 1.4rem;
+        color: #38bdf8;
+        font-size: 1.8rem;
+        font-weight: 300;
         margin-top: 6px;
         transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    
-    .poker-card-empty:hover {
-        border-color: rgba(56, 189, 248, 0.6);
-        background: rgba(20, 35, 30, 0.7);
-        transform: translateY(-4px);
     }
 
     .card-red { color: #e11d48; }
@@ -112,11 +106,6 @@ st.markdown("""
         margin-bottom: 12px;
         transition: transform 0.3s ease;
     }
-    
-    .hud-card:hover {
-        transform: translateY(-4px);
-        border-color: rgba(56, 189, 248, 0.3);
-    }
 
     .section-title {
         font-size: 1.05rem;
@@ -131,7 +120,12 @@ st.markdown("""
         gap: 8px;
     }
     
-    /* Primary CTA Button Overrides */
+    /* Custom Styling for Slot Select Buttons */
+    div.stButton > button {
+        border-radius: 8px;
+        font-weight: 600;
+    }
+
     div.stButton > button[kind="primary"] {
         background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%);
         border: none;
@@ -183,7 +177,6 @@ with st.sidebar:
     if st.button("Reset Board Cards", use_container_width=True):
         for b in range(5):
             st.session_state[f"b_{b}"] = None
-            st.session_state[f"use_b_{b}"] = False
         st.rerun()
         
     if st.button("Reset Everything", type="secondary", use_container_width=True):
@@ -201,11 +194,8 @@ for p in range(6):
 
 for b in range(5):
     key = f"b_{b}"
-    chk_key = f"use_b_{b}"
     if key not in st.session_state:
         st.session_state[key] = None
-    if chk_key not in st.session_state:
-        st.session_state[chk_key] = False
 
 def get_used_cards():
     used = set()
@@ -215,10 +205,9 @@ def get_used_cards():
             if val:
                 used.add(val)
     for b in range(5):
-        if st.session_state.get(f"use_b_{b}"):
-            val = st.session_state.get(f"b_{b}")
-            if val:
-                used.add(val)
+        val = st.session_state.get(f"b_{b}")
+        if val:
+            used.add(val)
     return used
 
 # Card Selection Modal Dialog
@@ -228,6 +217,13 @@ def open_card_picker(target_slot_key):
     current_val = st.session_state.get(target_slot_key)
     suit_names = {'s': 'Spades (♠)', 'h': 'Hearts (♥)', 'd': 'Diamonds (♦)', 'c': 'Clubs (♣)'}
     
+    # Quick Option to Clear Slot
+    if current_val:
+        if st.button("Clear Slot", type="secondary"):
+            st.session_state[target_slot_key] = None
+            st.rerun()
+        st.divider()
+
     for suit in SUITS:
         st.caption(suit_names[suit])
         grid_cols = st.columns(13)
@@ -260,39 +256,42 @@ for i in range(num_players):
         
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("Slot 1", key=f"btn_{c1_key}", use_container_width=True):
-                open_card_picker(c1_key)
             st.markdown(render_card_html(c1_val), unsafe_allow_html=True)
+            if st.button("➕ Card 1" if not c1_val else "Edit", key=f"btn_{c1_key}", use_container_width=True):
+                open_card_picker(c1_key)
             
         with col2:
-            if st.button("Slot 2", key=f"btn_{c2_key}", use_container_width=True):
-                open_card_picker(c2_key)
             st.markdown(render_card_html(c2_val), unsafe_allow_html=True)
+            if st.button("➕ Card 2" if not c2_val else "Edit", key=f"btn_{c2_key}", use_container_width=True):
+                open_card_picker(c2_key)
             
         player_hands.append([c1_val, c2_val])
 
 st.write("")
 
-# 2. COMMUNITY BOARD SECTION
+# 2. COMMUNITY BOARD SECTION (Clean Plus Icon Picker)
 st.markdown('<div class="section-title">COMMUNITY BOARD</div>', unsafe_allow_html=True)
 b_cols = st.columns(5)
 board_cards = []
 
+board_labels = ["Flop 1", "Flop 2", "Flop 3", "Turn", "River"]
+
 for idx in range(5):
     with b_cols[idx]:
-        stage_name = "Flop" if idx < 3 else ("Turn" if idx == 3 else "River")
-        chk = st.checkbox(f"Set {stage_name}", key=f"use_b_{idx}")
-        
+        st.caption(board_labels[idx])
         b_key = f"b_{idx}"
-        if chk:
-            if st.button("Select", key=f"btn_{b_key}", use_container_width=True):
-                open_card_picker(b_key)
-            card_val = st.session_state.get(b_key)
-            if card_val:
-                board_cards.append(card_val)
-            st.markdown(render_card_html(card_val), unsafe_allow_html=True)
-        else:
-            st.markdown(render_card_html(None), unsafe_allow_html=True)
+        card_val = st.session_state.get(b_key)
+        
+        # Floating card render
+        st.markdown(render_card_html(card_val), unsafe_allow_html=True)
+        
+        # Plus Button / Edit Trigger below slot
+        btn_label = "➕ Add" if not card_val else "Edit"
+        if st.button(btn_label, key=f"btn_{b_key}", use_container_width=True):
+            open_card_picker(b_key)
+            
+        if card_val:
+            board_cards.append(card_val)
 
 st.write("")
 st.divider()
