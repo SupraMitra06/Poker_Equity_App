@@ -34,4 +34,4 @@ if os.path.exists(BUILD_DIR):
     )
 else:
     # Development fallback pointing to local dev server
-    components.iframe("http://localhost:3000", height=950, scrolling=True)
+    st.iframe("http://localhost:3000", height=950, scrolling=True)
