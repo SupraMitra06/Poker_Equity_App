@@ -98,31 +98,31 @@ if len(all_selected_cards) != len(set(all_selected_cards)):
 else:
     if st.button("🚀 Calculate Real Equity", type="primary", use_container_width=True):
         with st.spinner(f"Running {iterations:,} Monte Carlo simulations..."):
-            # Build eval7 deck
-            deck = [eval7.Card(c) for c in eval7.Deck()]
-            
-            # Known cards to remove from deck
+            # Construct deck correctly with eval7
+            full_deck = list(eval7.Deck())
             known_cards = [eval7.Card(c) for c in all_selected_cards]
-            for card in known_cards:
-                deck.remove(card)
             
-            # Setup player hands & board
+            # Filter out known dead cards
+            deck = [c for c in full_deck if c not in known_cards]
+            
+            # Convert player hands & board to eval7 objects
             eval7_hands = [[eval7.Card(c) for c in hand] for hand in player_hands]
             eval7_board = [eval7.Card(c) for c in board_cards]
             cards_needed = 5 - len(eval7_board)
             
-            # Equity tracking counters
+            # Win counters
             wins = [0.0] * num_players
             
+            # Run simulation
             for _ in range(iterations):
                 random.shuffle(deck)
                 simulated_board = eval7_board + deck[:cards_needed]
                 
-                # Evaluate scores (higher score = better hand)
+                # Evaluate scores
                 scores = [eval7.evaluate(hand + simulated_board) for hand in eval7_hands]
                 max_score = max(scores)
                 
-                # Identify winners and handle ties (split pots)
+                # Identify winners and handle split pots
                 winners = [i for i, score in enumerate(scores) if score == max_score]
                 split_share = 1.0 / len(winners)
                 
