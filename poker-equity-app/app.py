@@ -2,50 +2,95 @@ import streamlit as st
 import eval7
 import random
 
+# Page Config
 st.set_page_config(
-    page_title="Texas Hold'em Equity Calculator",
-    page_icon="♠️",
-    layout="wide"
+    page_title="Texas Hold'em Equity Engine",
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-# Custom Styling
+# Deep Luxury / Modern Dark Poker Styling
 st.markdown("""
 <style>
+    /* Main Theme Overrides */
     .stApp {
-        background-color: #0d3b2e;
-        color: #ffffff;
+        background-color: #0b1311;
+        color: #e2e8f0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
-    .card-box {
-        background-color: #ffffff;
-        color: #1a1a1a;
-        padding: 6px 10px;
+    
+    /* Header Styling */
+    .main-header {
+        font-size: 2rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: #ffffff;
+        margin-bottom: 0.2rem;
+    }
+    .sub-header {
+        font-size: 0.95rem;
+        color: #94a3b8;
+        margin-bottom: 1.5rem;
+    }
+    
+    /* Poker Card UI Component */
+    .poker-card {
+        background: #ffffff;
         border-radius: 8px;
+        width: 64px;
+        height: 88px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 6px 8px;
         font-weight: 800;
-        font-size: 18px;
-        font-family: 'Courier New', Courier, monospace;
-        text-align: center;
-        border: 2px solid #ccc;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-        display: inline-flex;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+        border: 1px solid #e2e8f0;
+        user-select: none;
+        margin-top: 6px;
+    }
+    .poker-card-empty {
+        background: #14231e;
+        border: 2px dashed #2d4f43;
+        border-radius: 8px;
+        width: 64px;
+        height: 88px;
+        display: flex;
         align-items: center;
         justify-content: center;
-        width: 60px;
-        height: 45px;
-        margin-top: 4px;
+        color: #475569;
+        font-size: 1.2rem;
+        margin-top: 6px;
     }
-    .red-card { color: #dc2626; }
-    .black-card { color: #111827; }
+    .card-red { color: #dc2626; }
+    .card-black { color: #0f172a; }
     
-    /* Pop-up dialog styling */
-    div[data-testid="stDialog"] {
-        background-color: #1a2e26;
-        border-radius: 12px;
+    .card-rank { font-size: 1.25rem; line-height: 1; }
+    .card-suit { font-size: 1.2rem; align-self: flex-end; line-height: 1; }
+    
+    /* Section Headers */
+    .section-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #38bdf8;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-top: 1rem;
+        margin-bottom: 0.75rem;
+        border-bottom: 1px solid #1e293b;
+        padding-bottom: 0.5rem;
+    }
+
+    /* Streamlit Button Tweaks */
+    div.stButton > button {
+        border-radius: 6px;
+        font-weight: 600;
     }
 </style>
 """, unsafe_allow_html=True)
 
-st.title("♠️ Texas Hold'em Equity Calculator")
-st.caption("Click any card slot to open the selection modal.")
+st.markdown('<div class="main-header">TEXAS HOLD\'EM EQUITY CALCULATOR</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-header">Monte Carlo simulation engine built with eval7</div>', unsafe_allow_html=True)
 
 RANKS = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2']
 SUITS = ['s', 'h', 'd', 'c']
@@ -53,21 +98,32 @@ SUIT_SYMBOLS = {'s': '♠', 'h': '♥', 'd': '♦', 'c': '♣'}
 
 ALL_CARDS = [f"{r}{s}" for r in RANKS for s in SUITS]
 
-def format_card_html(card_str):
+def render_card_html(card_str):
     if not card_str or len(card_str) < 2:
-        return "<div class='card-box' style='background-color:#2a5043; color:#a0aec0;'>?</div>"
+        return "<div class='poker-card-empty'>—</div>"
     rank, suit = card_str[0], card_str[1]
     symbol = SUIT_SYMBOLS.get(suit, '')
-    color_class = "red-card" if suit in ['h', 'd'] else "black-card"
-    return f"<div class='card-box {color_class}'>{rank}{symbol}</div>"
+    color_class = "card-red" if suit in ['h', 'd'] else "card-black"
+    return f"""
+    <div class='poker-card {color_class}'>
+        <div class='card-rank'>{rank}</div>
+        <div class='card-suit'>{symbol}</div>
+    </div>
+    """
 
-# Sidebar configuration
+# Sidebar Control
 with st.sidebar:
-    st.header("⚙️ Simulation Settings")
+    st.markdown("### Settings")
     num_players = st.slider("Number of Players", min_value=2, max_value=6, value=2)
-    iterations = st.select_slider("Monte Carlo Iterations", options=[1000, 5000, 10000, 25000], value=5000)
+    iterations = st.select_slider(
+        "Monte Carlo Iterations", 
+        options=[1000, 5000, 10000, 25000, 50000], 
+        value=10000
+    )
+    st.divider()
+    st.caption("Lower iterations run faster. Higher iterations yield higher statistical accuracy.")
 
-# Initialize Session States
+# Initialize default cards in Session State if missing
 card_idx = 0
 for p in range(6):
     for c in [1, 2]:
@@ -84,7 +140,7 @@ for b in range(5):
     if chk_key not in st.session_state:
         st.session_state[chk_key] = False
 
-# Function to gather all currently selected cards across players & board
+# Gather active cards in play
 def get_used_cards():
     used = set()
     for p in range(num_players):
@@ -99,26 +155,23 @@ def get_used_cards():
                 used.add(val)
     return used
 
-# --- CARD PICKER POP-UP MODAL ---
-@st.dialog("🃏 Select a Card", width="large")
+# Card Selection Modal Dialog
+@st.dialog("Select Card", width="large")
 def open_card_picker(target_slot_key):
-    st.write("Chosen cards are **darkened out** and disabled.")
     used_cards = get_used_cards()
     current_val = st.session_state.get(target_slot_key)
     
-    suit_labels = {'s': '♠ Spades', 'h': '♥️ Hearts', 'd': '♦️ Diamonds', 'c': '♣ Clubs'}
+    suit_names = {'s': 'Spades (♠)', 'h': 'Hearts (♥)', 'd': 'Diamonds (♦)', 'c': 'Clubs (♣)'}
     
     for suit in SUITS:
-        st.caption(suit_labels[suit])
+        st.caption(suit_names[suit])
         grid_cols = st.columns(13)
         for r_idx, rank in enumerate(RANKS):
             card_code = f"{rank}{suit}"
-            # Card is considered used unless it's the card currently in this slot
             is_used = (card_code in used_cards) and (card_code != current_val)
             
             with grid_cols[r_idx]:
                 if is_used:
-                    # Blackened/Disabled Button
                     st.button("✖", key=f"dlg_{target_slot_key}_{card_code}", disabled=True)
                 else:
                     display_label = f"{rank}{SUIT_SYMBOLS[suit]}"
@@ -126,67 +179,74 @@ def open_card_picker(target_slot_key):
                         st.session_state[target_slot_key] = card_code
                         st.rerun()
 
-# --- MAIN INTERFACE SLOTS ---
-st.subheader("🃏 Player Hands")
+# 1. PLAYER HANDS SECTION
+st.markdown('<div class="section-title">Player Hands</div>', unsafe_allow_html=True)
 p_cols = st.columns(num_players)
 player_hands = []
 
 for i in range(num_players):
     with p_cols[i]:
-        st.markdown(f"### Player {i+1}")
-        col1, col2 = st.columns(2)
-        
+        st.markdown(f"**Player {i+1}**")
         c1_key = f"p{i}_c1"
         c2_key = f"p{i}_c2"
         
+        c1_val = st.session_state.get(c1_key)
+        c2_val = st.session_state.get(c2_key)
+        
+        col1, col2 = st.columns(2)
         with col1:
-            if st.button("Card 1", key=f"btn_{c1_key}"):
+            if st.button(f"Card 1", key=f"btn_{c1_key}", use_container_width=True):
                 open_card_picker(c1_key)
-            st.markdown(format_card_html(st.session_state.get(c1_key)), unsafe_allow_html=True)
+            st.markdown(render_card_html(c1_val), unsafe_allow_html=True)
             
         with col2:
-            if st.button("Card 2", key=f"btn_{c2_key}"):
+            if st.button(f"Card 2", key=f"btn_{c2_key}", use_container_width=True):
                 open_card_picker(c2_key)
-            st.markdown(format_card_html(st.session_state.get(c2_key)), unsafe_allow_html=True)
+            st.markdown(render_card_html(c2_val), unsafe_allow_html=True)
             
-        player_hands.append([st.session_state.get(c1_key), st.session_state.get(c2_key)])
+        player_hands.append([c1_val, c2_val])
 
-st.markdown("---")
-st.subheader("🏟️ Community Board")
+st.write("")
+
+# 2. COMMUNITY BOARD SECTION
+st.markdown('<div class="section-title">Community Board</div>', unsafe_allow_html=True)
 b_cols = st.columns(5)
 board_cards = []
 
 for idx in range(5):
     with b_cols[idx]:
-        label_name = "Flop" if idx < 3 else ("Turn" if idx == 3 else "River")
-        chk = st.checkbox(f"Set {label_name} {idx+1}", key=f"use_b_{idx}")
+        stage_name = "Flop" if idx < 3 else ("Turn" if idx == 3 else "River")
+        chk = st.checkbox(f"Set {stage_name}", key=f"use_b_{idx}")
         
         b_key = f"b_{idx}"
         if chk:
-            if st.button(f"Pick {label_name}", key=f"btn_{b_key}"):
+            if st.button(f"Pick", key=f"btn_{b_key}", use_container_width=True):
                 open_card_picker(b_key)
-            
             card_val = st.session_state.get(b_key)
             if card_val:
                 board_cards.append(card_val)
-            st.markdown(format_card_html(card_val), unsafe_allow_html=True)
+            st.markdown(render_card_html(card_val), unsafe_allow_html=True)
+        else:
+            st.markdown(render_card_html(None), unsafe_allow_html=True)
 
-st.markdown("---")
+st.write("")
+st.divider()
 
-# --- CALCULATOR ENGINE ---
+# 3. CALCULATOR ENGINE & RESULTS
 all_selected_cards = [c for hand in player_hands for c in hand if c] + board_cards
 missing_player_cards = any(c is None for hand in player_hands for c in hand)
 
 if missing_player_cards:
-    st.warning("⚠️ Please assign hole cards to all players.")
+    st.info("Assign hole cards for all players to calculate equity.")
 elif len(all_selected_cards) != len(set(all_selected_cards)):
-    st.error("⚠️ Duplicate card detected! Please reassign unique cards.")
+    st.error("Duplicate card selection detected. Please review assigned cards.")
 else:
-    if st.button("🚀 Calculate Equity", type="primary", use_container_width=True):
-        with st.spinner(f"Running {iterations:,} Monte Carlo simulations..."):
+    if st.button("Run Equity Simulation", type="primary", use_container_width=True):
+        with st.spinner(f"Simulating {iterations:,} Monte Carlo hands..."):
             full_deck = list(eval7.Deck())
             known_cards = [eval7.Card(c) for c in all_selected_cards]
             
+            # Remove all dead cards from the deck
             deck = [c for c in full_deck if c not in known_cards]
             
             eval7_hands = [[eval7.Card(c) for c in hand] for hand in player_hands]
@@ -195,6 +255,7 @@ else:
             
             wins = [0.0] * num_players
             
+            # Run Monte Carlo loop
             for _ in range(iterations):
                 random.shuffle(deck)
                 simulated_board = eval7_board + deck[:cards_needed]
@@ -210,13 +271,11 @@ else:
             
             equities = [(w / iterations) * 100 for w in wins]
             
-            st.subheader("📊 Equity Results")
+            # Display Results
+            st.markdown('<div class="section-title">Equity Breakdown</div>', unsafe_allow_html=True)
             res_cols = st.columns(num_players)
             
             for i in range(num_players):
                 with res_cols[i]:
-                    st.metric(label=f"Player {i+1} Equity", value=f"{equities[i]:.2f}%")
+                    st.metric(label=f"Player {i+1}", value=f"{equities[i]:.2f}%")
                     st.progress(min(1.0, equities[i] / 100.0))
-            
-            total_eq = sum(equities)
-            st.success(f"✅ Total Equity Sum: **{total_eq:.2f}%**")
